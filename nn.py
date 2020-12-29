@@ -25,10 +25,10 @@ class Sigmoid:
         self.output = 1 / (1 + np.exp(-X))
         return self.output
 
-    def backward(self, dvalues: np.ndarray) -> np.ndarray:
+    def backward(self, d_prev: np.ndarray) -> np.ndarray:
         S = self.output
         J = S * (1 - S)
-        return dvalues * J
+        return d_prev * J
 
 
 class Softmax:
@@ -43,10 +43,10 @@ class Softmax:
         self.output = exp / exp.sum(1, keepdims=True)
         return self.output
 
-    def backward(self, dvalues: np.ndarray) -> np.ndarray:
+    def backward(self, d_prev: np.ndarray) -> np.ndarray:
         S = self.output
         J = []
-        for d, s in zip(dvalues, S):
+        for d, s in zip(d_prev, S):
             x = np.diagflat(s) - np.einsum('i,j->ij', s, s)
             J.append(d @ x)
 
@@ -79,11 +79,11 @@ class LinearLayer:
         self.output = X.dot(self.W.T) + self.b
         return self.output
 
-    def backward(self, dvalues: np.ndarray) -> np.ndarray:
-        self.dW = dvalues.T @ self.input
-        self.db = dvalues.sum(0)
+    def backward(self, d_prev: np.ndarray) -> np.ndarray:
+        self.dW = d_prev.T @ self.input
+        self.db = d_prev.sum(0)
 
-        return dvalues @ self.W
+        return d_prev @ self.W
 
     def __repr__(self):
         return f"Layer {self.W.shape}"
@@ -99,9 +99,9 @@ class Layer(LinearLayer):
         self.output = self.activation.forward(super().forward(X))
         return self.output
 
-    def backward(self, dvalues: np.ndarray) -> np.ndarray:
-        dvalues = self.activation.backward(dvalues)
-        return super().backward(dvalues)
+    def backward(self, d_prev: np.ndarray) -> np.ndarray:
+        d_prev = self.activation.backward(d_prev)
+        return super().backward(d_prev)
 
 
 class SoftmaxLayer(Layer):
